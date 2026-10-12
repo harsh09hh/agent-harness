@@ -1,3 +1,15 @@
+
+export interface AgentCallBacks{
+
+  onToken: (token: string) => void;
+  onToolCallStart: (name: string, args: unknown) => void;
+  onToolCallEnd: (name: string, result: string) => void;
+  onComplete: (response: string) => void;
+  onToolApproval: (name: string, args: unknown) => Promise<boolean>;
+  onTokenUsage?: (usage: TokenUsageInfo) => void;
+
+}
+
 export interface ToolAprovalRequest{
     toolName:String,
     args :unknown,
@@ -19,7 +31,7 @@ export interface modelLimit {
 }
 
 
-// traking  the total token usage
+// current token usage for display
 export interface TokenUsageInfo {
   inputTokens: number;
   outputTokens: number;
