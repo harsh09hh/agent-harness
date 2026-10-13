@@ -31,6 +31,10 @@ export const filterCompatibleMessages=(
             const textPart = part as { text?: string };
             return textPart.text && textPart.text.trim();
           }
+          // keep tool calls too, so the tool results that follow still have their call
+          if (typeof part === "object" && part !== null && "type" in part) {
+            return (part as { type?: string }).type === "tool-call";
+          }
           return false;
         });
         return hasTextContent;

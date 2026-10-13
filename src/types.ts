@@ -10,7 +10,7 @@ export interface AgentCallbacks{
 
 }
 
-export interface ToolAprovalRequest{
+export interface ToolApprovalRequest{
     toolName:string,
     args :unknown,
     resolve:(approved:boolean)=>void

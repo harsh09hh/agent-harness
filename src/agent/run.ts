@@ -45,7 +45,10 @@ export async function runAgent(
       const modelLimits = getModelLimits(MODEL_NAME);
 
   // Filter and check if we need to compact
-  let workingHistory = filterCompatibleMessages(conversationHistory);
+  // (the history we return starts with the system prompt - drop it here so it is not added again every turn)
+  let workingHistory: ModelMessage[] = filterCompatibleMessages(conversationHistory).filter(
+    (msg) => msg.role !== "system",
+  );
   const preCheckTokens = estimateMessagesTokens([
     { role: "system", content: SYSTEM_PROMPT },
     ...workingHistory,
@@ -133,22 +136,49 @@ export async function runAgent(
     const responceMessage = await result.response;
     messages.push(...responceMessage.messages);
     
-    //executing each tool call and adding results to message history
+    // Process tool calls sequentially with approval for each
+    let rejected = false;
+    for (const tc of toolCalls) {
+      // after one rejection the remaining calls in this step are skipped without asking
+      const approved = !rejected && (await callbacks.onToolApproval(tc.toolName, tc.args));
 
-    for(const tc of toolCalls){
-        const toolResult  = await executeTool(tc.toolName, tc.args);
-        callbacks.onToolCallEnd(tc.toolName, toolResult);
+      if (!approved) {
+        rejected = true;
+        // every tool call needs a result in the history, otherwise the next
+        // message fails with "Tool result is missing for tool call"
         messages.push({
-            role:"tool",
-            content:[
-                {
-                    type:"tool-result",
-                    toolCallId:tc.toolCallId,
-                    toolName:tc.toolName,
-                    output:{ type:"text" ,value:toolResult},
-                },
-            ],
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: tc.toolCallId,
+              toolName: tc.toolName,
+              output: { type: "text", value: "Tool call rejected by the user." },
+            },
+          ],
         });
+        continue;
+      }
+
+      const result = await executeTool(tc.toolName, tc.args);
+      callbacks.onToolCallEnd(tc.toolName, result);
+
+      messages.push({
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: tc.toolCallId,
+            toolName: tc.toolName,
+            output: { type: "text", value: result },
+          },
+        ],
+      });
+      reportTokenUsage();
+    }
+
+    if (rejected) {
+      break;
     }
 
     }
