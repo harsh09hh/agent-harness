@@ -1,5 +1,5 @@
 
-export interface AgentCallBacks{
+export interface AgentCallbacks{
 
   onToken: (token: string) => void;
   onToolCallStart: (name: string, args: unknown) => void;
