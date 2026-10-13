@@ -1,4 +1,4 @@
-import { streamText, type ModelMessage } from "ai";
+import { streamText, type ModelMessage, type ToolSet } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { aiSdkTelemetry } from "@lmnr-ai/lmnr";
 import { tools } from "./tools/index.ts";
@@ -13,6 +13,12 @@ import { groq } from "@ai-sdk/groq";
 Laminar.initialize({
   projectApiKey: process.env.LMNR_API_KEY,
 });
+
+// The loop below runs the tools itself (executeTool), so the model gets them
+// without execute - otherwise the SDK runs each tool too and every call happens twice
+const modelTools: ToolSet = Object.fromEntries(
+  Object.entries(tools).map(([name, { execute, ...definition }]) => [name, definition]),
+);
 
 
 
@@ -39,7 +45,7 @@ export async function runAgent(
       model: groq('openai/gpt-oss-120b'),
       messages,
       allowSystemInMessages: true,
-      tools,
+      tools: modelTools,
       experimental_telemetry: {
         isEnabled: true,
         integrations: aiSdkTelemetry(),

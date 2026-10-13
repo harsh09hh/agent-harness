@@ -24,10 +24,10 @@ export interface ToolCallInfo{
 
 
 //tokens limit for context managment 
-export interface modelLimit {
+export interface ModelLimits {
     inputLimit:number ,
     outputLimit :number ,
-    windowSize:number 
+    contextWindow:number
 }
 
 
