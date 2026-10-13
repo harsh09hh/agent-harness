@@ -1,5 +1,6 @@
 import { generateText, stepCountIs, type ModelMessage, type ToolSet } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 
 import { SYSTEM_PROMPT } from "../src/agent/system/prompts.ts";
 import type { EvalData, SingleTurnResult } from "./types.ts";
@@ -28,8 +29,10 @@ export async function singleTurnExecutor(
     }
 
     const result  = await generateText({
-        model:openai('gpt-4.1'),
+        // model:openai('gpt-4.1'),
+        model:google('gemini-3.6-flash'),
         messages,
+        allowSystemInMessages: true,
         tools,
         stopWhen: stepCountIs(1) ,
         temperature: data.config?.temperature ?? undefined,

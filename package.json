@@ -1,5 +1,4 @@
 {
-
   "name": "agi",
   "version": "1.0.0",
   "main": "index.js",
@@ -22,6 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/google": "^4.0.94",
     "@ai-sdk/openai": "^4.0.92",
     "@lmnr-ai/lmnr": "^0.8.51",
     "ai": "^7.0.138",
