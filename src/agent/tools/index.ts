@@ -1,4 +1,5 @@
 import { readFile, listFiles,writeFile, deleteFile } from "./file.ts";
+import { webSearch } from "./webSearch.ts";
 
 // All tools combined for the agent
 export const tools = {
@@ -6,6 +7,7 @@ export const tools = {
   listFiles,
   writeFile,
   deleteFile,
+  webSearch
 
 };
 
@@ -18,4 +20,5 @@ export const fileTools = {
   listFiles,
   writeFile,
   deleteFile,
+  webSearch
 };
