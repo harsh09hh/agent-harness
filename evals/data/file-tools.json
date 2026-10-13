@@ -1,0 +1,67 @@
+[
+  {
+    "data": {
+      "prompt": "Read the contents of README.md",
+      "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
+    },
+    "target": {
+      "expectedTools": ["readFile"],
+      "category": "golden"
+    },
+    "metadata": {
+      "description": "Direct read request should select readFile"
+    }
+  },
+  {
+    "data": {
+      "prompt": "What files are in the src directory?",
+      "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
+    },
+    "target": {
+      "expectedTools": ["listFiles"],
+      "category": "golden"
+    },
+    "metadata": {
+      "description": "Directory listing should select listFiles"
+    }
+  },
+  {
+    "data": {
+      "prompt": "Show me what's in the project",
+      "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
+    },
+    "target": {
+      "expectedTools": ["listFiles"],
+      "category": "secondary"
+    },
+    "metadata": {
+      "description": "Ambiguous request likely needs listFiles"
+    }
+  },
+  {
+    "data": {
+      "prompt": "What is the capital of France?",
+      "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
+    },
+    "target": {
+      "forbiddenTools": ["readFile", "writeFile", "listFiles", "deleteFile"],
+      "category": "negative"
+    },
+    "metadata": {
+      "description": "General knowledge question should not use file tools"
+    }
+  },
+  {
+    "data": {
+      "prompt": "Tell me a joke",
+      "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
+    },
+    "target": {
+      "forbiddenTools": ["readFile", "writeFile", "listFiles", "deleteFile"],
+      "category": "negative"
+    },
+    "metadata": {
+      "description": "Creative request should not use file tools"
+    }
+  }
+]
