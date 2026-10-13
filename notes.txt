@@ -1,0 +1,4 @@
+Example Notes:
+- Item 1: This is a sample note.
+- Item 2: Remember to review the documentation.
+- Item 3: Follow up on the pending tasks.

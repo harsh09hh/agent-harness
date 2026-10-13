@@ -1,6 +1,7 @@
 import { generateText, getToolName, stepCountIs, type ModelMessage, type ToolSet } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 
 import { SYSTEM_PROMPT } from "../src/agent/system/prompts.ts";
 import type { EvalData, SingleTurnResult, MultiTurnEvalData, MultiTurnResult } from "./types.ts";
@@ -30,7 +31,8 @@ export async function singleTurnExecutor(
 
     const result  = await generateText({
         // model:openai('gpt-4.1'),
-        model:google('gemini-3.6-flash'),
+        // model:google('gemini-3.6-flash'),
+        model:groq('openai/gpt-oss-120b'),
         messages,
         allowSystemInMessages: true,
         tools,
@@ -66,7 +68,8 @@ export async function multiTurnWithMocks(  data: MultiTurnEvalData,
     ]
 
     const result = await generateText({
-        model:google('gemini-3.5-flash-lite'),
+        // model:google('gemini-3.5-flash-lite'),
+        model:groq('openai/gpt-oss-120b'),
         messages,
         allowSystemInMessages: true,
         tools,

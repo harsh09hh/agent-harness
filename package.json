@@ -2,8 +2,9 @@
   "name": "agi",
   "version": "1.0.0",
   "main": "index.js",
-  "files": ["dist"],
-
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "bin": {
     "agi": "./dist/cli.js"
@@ -22,6 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/google": "^4.0.94",
+    "@ai-sdk/groq": "^4.0.60",
     "@ai-sdk/openai": "^4.0.92",
     "@lmnr-ai/lmnr": "^0.8.51",
     "ai": "^7.0.138",

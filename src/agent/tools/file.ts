@@ -57,3 +57,58 @@ export const listFiles=tool({
         }
     }
 })
+
+/**
+ * Write content to a file
+ */
+export const writeFile = tool({
+  description:
+    "Write content to a file at the specified path. Creates the file if it doesn't exist, overwrites if it does.",
+  inputSchema: z.object({
+    path: z.string().describe("The path to the file to write"),
+    content: z.string().describe("The content to write to the file"),
+  }),
+  execute: async ({
+    path: filePath,
+    content,
+  }: {
+    path: string;
+    content: string;
+  }) => {
+    try {
+      // Create parent directories if they don't exist
+      const dir = path.dirname(filePath);
+      await fs.mkdir(dir, { recursive: true });
+
+      await fs.writeFile(filePath, content, "utf-8");
+      return `Successfully wrote ${content.length} characters to ${filePath}`;
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      return `Error writing file: ${err.message}`;
+    }
+  },
+});
+
+
+/**
+ * Delete a file
+ */
+export const deleteFile = tool({
+  description:
+    "Delete a file at the specified path. Use with caution as this is irreversible.",
+  inputSchema: z.object({
+    path: z.string().describe("The path to the file to delete"),
+  }),
+  execute: async ({ path: filePath }: { path: string }) => {
+    try {
+      await fs.unlink(filePath);
+      return `Successfully deleted ${filePath}`;
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err.code === "ENOENT") {
+        return `Error: File not found: ${filePath}`;
+      }
+      return `Error deleting file: ${err.message}`;
+    }
+  },
+});

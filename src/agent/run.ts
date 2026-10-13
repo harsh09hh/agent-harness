@@ -7,6 +7,7 @@ import { SYSTEM_PROMPT } from "./system/prompts.ts";
 import { Laminar } from "@lmnr-ai/lmnr";
 import type { AgentCallbacks, ToolCallInfo } from "../types.ts";
 import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 
 // Initialize Laminar for observability (optional - traces LLM calls)
 Laminar.initialize({
@@ -34,7 +35,8 @@ export async function runAgent(
    while (true) {
     const result = streamText({
       // model: openai('gpt-4.1'),
-      model: google('gemini-3.6-flash'),
+      // model: google('gemini-3.6-flash'),
+      model: groq('openai/gpt-oss-120b'),
       messages,
       allowSystemInMessages: true,
       tools,

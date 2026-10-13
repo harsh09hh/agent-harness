@@ -7,9 +7,6 @@
     "target": {
       "expectedTools": ["readFile"],
       "category": "golden"
-    },
-    "metadata": {
-      "description": "Direct read request should select readFile"
     }
   },
   {
@@ -20,22 +17,26 @@
     "target": {
       "expectedTools": ["listFiles"],
       "category": "golden"
-    },
-    "metadata": {
-      "description": "Directory listing should select listFiles"
     }
   },
   {
     "data": {
-      "prompt": "Show me what's in the project",
+      "prompt": "Create a new file called notes.txt with some example content",
       "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
     },
     "target": {
-      "expectedTools": ["listFiles"],
-      "category": "secondary"
+      "expectedTools": ["writeFile"],
+      "category": "golden"
+    }
+  },
+  {
+    "data": {
+      "prompt": "Remove the old config.bak file",
+      "tools": ["readFile", "writeFile", "listFiles", "deleteFile"]
     },
-    "metadata": {
-      "description": "Ambiguous request likely needs listFiles"
+    "target": {
+      "expectedTools": ["deleteFile"],
+      "category": "golden"
     }
   },
   {
@@ -46,9 +47,6 @@
     "target": {
       "forbiddenTools": ["readFile", "writeFile", "listFiles", "deleteFile"],
       "category": "negative"
-    },
-    "metadata": {
-      "description": "General knowledge question should not use file tools"
     }
   },
   {
@@ -59,9 +57,6 @@
     "target": {
       "forbiddenTools": ["readFile", "writeFile", "listFiles", "deleteFile"],
       "category": "negative"
-    },
-    "metadata": {
-      "description": "Creative request should not use file tools"
     }
   }
 ]
