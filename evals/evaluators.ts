@@ -1,4 +1,3 @@
-import { length } from "zod";
 import type { EvalTarget, SingleTurnResult } from "./types.ts";
 
 /**
@@ -33,7 +32,7 @@ export function toolsAvoided(
     if(!target.forbiddenTools?.length) return 1;
 
     const selected= new Set(output.toolNames);
-    return target.forbiddenTools.every((t)=>selected.has(t)) ? 0:1;
+    return target.forbiddenTools.some((t)=>selected.has(t)) ? 0:1;
 
 } 
 
@@ -43,12 +42,12 @@ export function toolsAvoided(
  * For secondary prompts.
  */
 
-export function toolsSelectionScoring(
+export function toolSelectionScore(
   output: SingleTurnResult,
   target: EvalTarget,
 ): number {
 
-    if(!target.forbiddenTools?.length){
+    if(!target.expectedTools?.length){
         return output.selectedAny? 0.5 : 1;
     }
 
@@ -63,7 +62,7 @@ export function toolsSelectionScoring(
   // F1 -score;
   if(precision+recall===0) return 0;
   
-  return (2*precision/recall)/(precision+recall);
+  return (2*precision*recall)/(precision+recall);
 
 
 } 

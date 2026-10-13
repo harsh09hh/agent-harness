@@ -11,13 +11,13 @@ export interface AgentCallBacks{
 }
 
 export interface ToolAprovalRequest{
-    toolName:String,
+    toolName:string,
     args :unknown,
     resolve:(approved:boolean)=>void
 }
 
 export interface ToolCallInfo{
-    toolCallId:String,
+    toolCallId:string,
     toolName:string,
     args:Record<string ,unknown>
 }

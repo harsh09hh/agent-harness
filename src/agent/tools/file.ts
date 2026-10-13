@@ -44,7 +44,7 @@ export const listFiles=tool({
                 return`${type}${entry.name}`;
             });
             
-            return items.length>0 ? items.join("/n") : `Directory ${directory} is empty`;
+            return items.length>0 ? items.join("\n") : `Directory ${directory} is empty`;
         }
         catch(error){
             const err = error as NodeJS.ErrnoException;

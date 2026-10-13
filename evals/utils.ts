@@ -1,7 +1,7 @@
 import { tool, type ModelMessage, type ToolSet } from "ai";
 import { z } from "zod";
-import { SYSTEM_PROMPT } from "../src/agent/system/prompt.ts";
-import type { EvalData, MultiTurnEvalData } from "./types.ts";
+import { SYSTEM_PROMPT } from "../src/agent/system/prompts.ts";
+import type { EvalData } from "./types.ts";
 
 /**
  * Build message array from eval data
