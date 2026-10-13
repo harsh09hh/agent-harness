@@ -1,4 +1,4 @@
-import type { EvalTarget, SingleTurnResult } from "./types.ts";
+import type { EvalTarget, SingleTurnResult, MultiTurnResult, MultiTurnTarget } from "./types.ts";
 
 /**
  * Evaluator: Check if all expected tools were selected.
@@ -25,13 +25,13 @@ export function toolsSelected(
  */
 
 export function toolsAvoided(
-  output: SingleTurnResult,
-  target: EvalTarget,
+  output: SingleTurnResult | MultiTurnResult,
+  target: EvalTarget | MultiTurnTarget,
 ): number {
 
     if(!target.forbiddenTools?.length) return 1;
 
-    const selected= new Set(output.toolNames);
+    const selected= new Set("toolNames" in output ? output.toolNames : output.toolsUsed);
     return target.forbiddenTools.some((t)=>selected.has(t)) ? 0:1;
 
 } 
@@ -66,3 +66,28 @@ export function toolSelectionScore(
 
 
 } 
+
+/**
+ * Evaluator: Check if tools were called in the expected order.
+ * Returns the fraction of expected tools found in sequence.
+ * Order matters but tools don't need to be consecutive.
+ */
+export function toolOrderCorrect(
+  output: MultiTurnResult,
+  target: MultiTurnTarget,
+): number {
+  if (!target.expectedToolOrder?.length) return 1;
+
+  const actualOrder = output.toolCallOrder;
+
+  // Check if expected tools appear in order (not necessarily consecutive)
+  let expectedIdx = 0;
+  for (const toolName of actualOrder) {
+    if (toolName === target.expectedToolOrder[expectedIdx]) {
+      expectedIdx++;
+      if (expectedIdx === target.expectedToolOrder.length) break;
+    }
+  }
+
+  return expectedIdx / target.expectedToolOrder.length;
+}
