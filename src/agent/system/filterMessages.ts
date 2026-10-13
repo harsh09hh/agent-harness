@@ -4,7 +4,7 @@ import type { ModelMessage } from "ai";
 
 
 
-export const filterCompatibleMessage=(
+export const filterCompatibleMessages=(
   messages: ModelMessage[],
 ): ModelMessage[] => {
 

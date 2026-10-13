@@ -8,6 +8,17 @@ import { Laminar } from "@lmnr-ai/lmnr";
 import type { AgentCallbacks, ToolCallInfo } from "../types.ts";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
+import {
+  estimateMessagesTokens,
+  getModelLimits,
+  isOverThreshold,
+  calculateUsagePercentage,
+  compactConversation,
+  DEFAULT_THRESHOLD,
+} from "./context/index.ts";
+import { filterCompatibleMessages } from "./system/filterMessages.ts";
+
+const MODEL_NAME = "openai/gpt-oss-120b";
 
 // Initialize Laminar for observability (optional - traces LLM calls)
 Laminar.initialize({
@@ -29,20 +40,55 @@ export async function runAgent(
   callbacks: AgentCallbacks,
 ):Promise<ModelMessage[]> {
 
+
+
+      const modelLimits = getModelLimits(MODEL_NAME);
+
+  // Filter and check if we need to compact
+  let workingHistory = filterCompatibleMessages(conversationHistory);
+  const preCheckTokens = estimateMessagesTokens([
+    { role: "system", content: SYSTEM_PROMPT },
+    ...workingHistory,
+    { role: "user", content: userMessage },
+  ]);
+
+  if (isOverThreshold(preCheckTokens.total, modelLimits.contextWindow)) {
+    workingHistory = await compactConversation(workingHistory, MODEL_NAME);
+  }
+
   const messages: ModelMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
-    ...conversationHistory,
+    ...workingHistory,
     { role: "user", content: userMessage },
   ];
 
-    let fullResponse = "";
+  // Report token usage throughout the loop
+  const reportTokenUsage = () => {
+    if (callbacks.onTokenUsage) {
+      const usage = estimateMessagesTokens(messages);
+      callbacks.onTokenUsage({
+        inputTokens: usage.input,
+        outputTokens: usage.output,
+        totalTokens: usage.total,
+        contextWindow: modelLimits.contextWindow,
+        threshold: DEFAULT_THRESHOLD,
+        percentage: calculateUsagePercentage(
+          usage.total,
+          modelLimits.contextWindow,
+        ),
+      });
+    }
+  };
 
+  reportTokenUsage();
+
+    let fullResponse = "";
 
    while (true) {
     const result = streamText({
       // model: openai('gpt-4.1'),
       // model: google('gemini-3.6-flash'),
-      model: groq('openai/gpt-oss-120b'),
+      model: groq(MODEL_NAME),
       messages,
       allowSystemInMessages: true,
       tools: modelTools,
