@@ -17,8 +17,24 @@ import {
   DEFAULT_THRESHOLD,
 } from "./context/index.ts";
 import { filterCompatibleMessages } from "./system/filterMessages.ts";
+import path from "path";
 
-const MODEL_NAME = "openai/gpt-oss-120b";
+export const MODEL_NAME = "openai/gpt-oss-120b";
+
+// Read-only tools run without asking. Anything not listed here (write, delete,
+// run code, and any tool added later) asks for approval first.
+const NO_APPROVAL_TOOLS = new Set(["readFile", "listFiles"]);
+
+function needsApproval(toolName: string, args: Record<string, unknown>): boolean {
+  if (!NO_APPROVAL_TOOLS.has(toolName)) return true;
+
+  // reading a secrets file (.env, .env.local, ...) is not a basic read
+  if (toolName === "readFile" && typeof args.path === "string") {
+    return path.basename(args.path).toLowerCase().startsWith(".env");
+  }
+
+  return false;
+}
 
 // Initialize Laminar for observability (optional - traces LLM calls)
 Laminar.initialize({
@@ -44,13 +60,16 @@ export async function runAgent(
 
       const modelLimits = getModelLimits(MODEL_NAME);
 
+  // tell the model which folder it is working in (the user can change it from the UI)
+  const systemPrompt = `${SYSTEM_PROMPT}\n\nCurrent working directory: ${process.cwd()}`;
+
   // Filter and check if we need to compact
   // (the history we return starts with the system prompt - drop it here so it is not added again every turn)
   let workingHistory: ModelMessage[] = filterCompatibleMessages(conversationHistory).filter(
     (msg) => msg.role !== "system",
   );
   const preCheckTokens = estimateMessagesTokens([
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...workingHistory,
     { role: "user", content: userMessage },
   ]);
@@ -60,7 +79,7 @@ export async function runAgent(
   }
 
   const messages: ModelMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...workingHistory,
     { role: "user", content: userMessage },
   ];
@@ -136,11 +155,14 @@ export async function runAgent(
     const responceMessage = await result.response;
     messages.push(...responceMessage.messages);
     
-    // Process tool calls sequentially with approval for each
+    // Process tool calls sequentially, asking for approval only where it is needed
     let rejected = false;
     for (const tc of toolCalls) {
       // after one rejection the remaining calls in this step are skipped without asking
-      const approved = !rejected && (await callbacks.onToolApproval(tc.toolName, tc.args));
+      const approved =
+        !rejected &&
+        (!needsApproval(tc.toolName, tc.args) ||
+          (await callbacks.onToolApproval(tc.toolName, tc.args)));
 
       if (!approved) {
         rejected = true;

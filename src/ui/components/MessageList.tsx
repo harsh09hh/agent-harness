@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useWindowSize } from 'ink';
+import { Markdown } from './Markdown.tsx';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -11,6 +12,10 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages }: MessageListProps) {
+  const { columns } = useWindowSize();
+  // screen padding (2) and the indent under "› Assistant" (2)
+  const contentWidth = columns - 4;
+
   return (
     <Box flexDirection="column" gap={1}>
       {messages.map((message, index) => (
@@ -19,7 +24,11 @@ export function MessageList({ messages }: MessageListProps) {
             {message.role === 'user' ? '› You' : '› Assistant'}
           </Text>
           <Box marginLeft={2}>
-            <Text>{message.content}</Text>
+            {message.role === 'assistant' ? (
+              <Markdown text={message.content} width={contentWidth} />
+            ) : (
+              <Text>{message.content}</Text>
+            )}
           </Box>
         </Box>
       ))}
