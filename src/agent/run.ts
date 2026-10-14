@@ -8,6 +8,7 @@ import { Laminar } from "@lmnr-ai/lmnr";
 import type { AgentCallbacks, ToolCallInfo } from "../types.ts";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
+import { DEFAULT_MODEL, getModel } from "./models.ts";
 import {
   estimateMessagesTokens,
   getModelLimits,
@@ -18,8 +19,6 @@ import {
 } from "./context/index.ts";
 import { filterCompatibleMessages } from "./system/filterMessages.ts";
 import path from "path";
-
-export const MODEL_NAME = "openai/gpt-oss-120b";
 
 // Read-only tools run without asking. Anything not listed here (write, delete,
 // run code, and any tool added later) asks for approval first.
@@ -54,11 +53,12 @@ export async function runAgent(
   userMessage: string,
   conversationHistory: ModelMessage[],
   callbacks: AgentCallbacks,
+  modelName: string = DEFAULT_MODEL,
 ):Promise<ModelMessage[]> {
 
 
 
-      const modelLimits = getModelLimits(MODEL_NAME);
+      const modelLimits = getModelLimits(modelName);
 
   // tell the model which folder it is working in (the user can change it from the UI)
   const systemPrompt = `${SYSTEM_PROMPT}\n\nCurrent working directory: ${process.cwd()}`;
@@ -75,7 +75,7 @@ export async function runAgent(
   ]);
 
   if (isOverThreshold(preCheckTokens.total, modelLimits.contextWindow)) {
-    workingHistory = await compactConversation(workingHistory, MODEL_NAME);
+    workingHistory = await compactConversation(workingHistory, modelName);
   }
 
   const messages: ModelMessage[] = [
@@ -110,7 +110,8 @@ export async function runAgent(
     const result = streamText({
       // model: openai('gpt-4.1'),
       // model: google('gemini-3.6-flash'),
-      model: groq(MODEL_NAME),
+      // model: groq(modelName),
+      model: getModel(modelName),
       messages,
       allowSystemInMessages: true,
       tools: modelTools,

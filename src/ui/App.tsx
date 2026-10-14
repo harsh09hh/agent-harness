@@ -9,13 +9,15 @@ import {
   type DOMElement,
 } from "ink";
 import type { ModelMessage } from "ai";
-import { runAgent, MODEL_NAME } from "../agent/run.ts";
+import { runAgent } from "../agent/run.ts";
+import { DEFAULT_MODEL, missingKey } from "../agent/models.ts";
 import { MessageList, type Message } from "./components/MessageList.tsx";
 import { ToolCall, type ToolCallProps } from "./components/ToolCall.tsx";
 import { Spinner } from "./components/Spinner.tsx";
 import { Input } from "./components/Input.tsx";
 import { ToolApproval } from "./components/ToolApproval.tsx";
 import { FolderPicker } from "./components/FolderPicker.tsx";
+import { ModelPicker } from "./components/ModelPicker.tsx";
 import { StatusBar } from "./components/StatusBar.tsx";
 import { Markdown } from "./components/Markdown.tsx";
 import type { ToolApprovalRequest, TokenUsageInfo } from "../types.ts";
@@ -40,6 +42,9 @@ export function App() {
   // the folder the agent works in (relative paths and code execution use it)
   const [folder, setFolder] = useState(process.cwd());
   const [isPickingFolder, setIsPickingFolder] = useState(false);
+  // the model the agent uses (the user can change it from the UI with Tab)
+  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [isPickingModel, setIsPickingModel] = useState(false);
   // how many lines the message area is scrolled up from the newest message
   const [scrollUp, setScrollUp] = useState(0);
 
@@ -52,8 +57,8 @@ export function App() {
   const offset = Math.max(0, maxScroll - scrollUp);
 
   useInput((_input, key) => {
-    // the approval prompt and the folder picker use the arrow keys themselves
-    const arrowsFree = !pendingApproval && !isPickingFolder;
+    // the approval prompt and the pickers use the arrow keys themselves
+    const arrowsFree = !pendingApproval && !isPickingFolder && !isPickingModel;
     const page = Math.max(1, viewport.height - 2);
 
     if (key.pageUp) {
@@ -84,6 +89,22 @@ export function App() {
         { role: "assistant", content: `Could not open that folder: ${errorMessage}` },
       ]);
     }
+    setScrollUp(0);
+  }, []);
+
+  const handleModelSelect = useCallback((selected: string) => {
+    setIsPickingModel(false);
+    setModel(selected);
+    const missing = missingKey(selected);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: missing
+          ? `Model set to ${selected}, but ${missing} is not set in .env - requests will fail until you add it.`
+          : `Model set to ${selected}`,
+      },
+    ]);
     setScrollUp(0);
   }, []);
 
@@ -146,7 +167,7 @@ export function App() {
           onTokenUsage: (usage) => {
             setTokenUsage(usage);
           },
-        });
+        }, model);
 
         setConversationHistory(newHistory);
       } catch (error) {
@@ -160,7 +181,7 @@ export function App() {
         setIsLoading(false);
       }
     },
-    [conversationHistory, exit],
+    [conversationHistory, exit, model],
   );
 
   return (
@@ -174,7 +195,7 @@ export function App() {
           </Text>
           <Text dimColor>
             {" "}
-            (type "exit" to quit · + to change folder · PgUp/PgDn to scroll)
+            (type "exit" to quit · + to change folder · Tab to change model · PgUp/PgDn to scroll)
           </Text>
         </Text>
       </Box>
@@ -255,15 +276,22 @@ export function App() {
             onSelect={handleFolderSelect}
             onCancel={() => setIsPickingFolder(false)}
           />
+        ) : isPickingModel ? (
+          <ModelPicker
+            current={model}
+            onSelect={handleModelSelect}
+            onCancel={() => setIsPickingModel(false)}
+          />
         ) : (
           <Input
             onSubmit={handleSubmit}
             disabled={isLoading}
             onPlus={() => setIsPickingFolder(true)}
+            onTab={() => setIsPickingModel(true)}
           />
         )}
 
-        <StatusBar folder={folder} model={MODEL_NAME} usage={tokenUsage} />
+        <StatusBar folder={folder} model={model} usage={tokenUsage} />
       </Box>
     </Box>
   );

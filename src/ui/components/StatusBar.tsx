@@ -12,6 +12,18 @@ interface StatusBarProps {
 // below this width the folder and the model/tokens no longer fit side by side
 const SINGLE_LINE_MIN_COLUMNS = 90;
 
+// the model label, with the key that opens the model picker
+function ModelLabel({ model }: { model: string }) {
+  return (
+    <Text>
+      <Text color="magenta" bold>
+        [tab]
+      </Text>
+      <Text color="magenta"> {model}</Text>
+    </Text>
+  );
+}
+
 // The line under the input bar: folder button on the left, model and tokens on the right.
 // In a narrow terminal the two halves are stacked instead.
 export function StatusBar({ folder, model, usage }: StatusBarProps) {
@@ -40,7 +52,7 @@ export function StatusBar({ folder, model, usage }: StatusBarProps) {
       <Box flexDirection="column" paddingX={1}>
         {folderPart}
         <Text>
-          <Text color="magenta">{model}</Text>
+          <ModelLabel model={model} />
           <Text dimColor> · </Text>
           <TokenUsage usage={usage} compact />
         </Text>
@@ -54,7 +66,7 @@ export function StatusBar({ folder, model, usage }: StatusBarProps) {
         {folderPart}
       </Box>
       <Box flexShrink={0}>
-        <Text color="magenta">{model}</Text>
+        <ModelLabel model={model} />
         <Text dimColor> · </Text>
         <TokenUsage usage={usage} />
       </Box>
