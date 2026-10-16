@@ -27,6 +27,24 @@ interface ActiveToolCall extends ToolCallProps {
   id: string;
 }
 
+// a line left in the chat about the sub-agents a message used, so it is still
+// visible after their live rows are cleared
+function subAgentNote(agents: Map<string, SubAgentUpdate>): Message[] {
+  if (agents.size === 0) return [];
+  const list = [...agents.values()]
+    .map(
+      (agent) =>
+        `${agent.description} ${agent.status === "failed" ? "✗" : "✓"} (${agent.step} step${agent.step === 1 ? "" : "s"})`,
+    )
+    .join(" · ");
+  return [
+    {
+      role: "note",
+      content: `⇢ used ${agents.size} sub-agent${agents.size === 1 ? "" : "s"}: ${list}`,
+    },
+  ];
+}
+
 export function App() {
   const { exit } = useApp();
   const { columns, rows } = useWindowSize();
@@ -39,6 +57,8 @@ export function App() {
   const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([]);
   // sub-agents started with spawnAgent during the current message
   const [subAgents, setSubAgents] = useState<SubAgentUpdate[]>([]);
+  // what the agent is doing right now, shown next to the spinner while it works
+  const [activity, setActivity] = useState("Thinking");
   const [pendingApproval, setPendingApproval] =
     useState<ToolApprovalRequest | null>(null);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
@@ -126,14 +146,22 @@ export function App() {
       setStreamingText("");
       setActiveToolCalls([]);
       setSubAgents([]);
+      setActivity("Thinking");
       setScrollUp(0);
+      // every sub-agent this message starts, for the note left in the chat afterwards
+      const usedSubAgents = new Map<string, SubAgentUpdate>();
 
       try {
         const newHistory = await runAgent(userInput, conversationHistory, {
           onToken: (token) => {
             setStreamingText((prev) => prev + token);
+            setActivity("Writing");
+          },
+          onToolInputStart: (name) => {
+            setActivity(name === "spawnAgent" ? "Planning sub-agents" : `Preparing ${name}`);
           },
           onToolCallStart: (name, args, toolCallId) => {
+            setActivity(name === "spawnAgent" ? "Starting sub-agents" : `Running ${name}`);
             setActiveToolCalls((prev) => [
               ...prev,
               {
@@ -146,6 +174,8 @@ export function App() {
           },
           // matched by id: two calls to the same tool in one step are separate rows
           onToolCallEnd: (_name, result, toolCallId) => {
+            // the model is called again next, with the result
+            setActivity("Thinking");
             setActiveToolCalls((prev) =>
               prev.map((tc) =>
                 tc.id === toolCallId ? { ...tc, status: "complete", result } : tc,
@@ -153,6 +183,7 @@ export function App() {
             );
           },
           onSubAgentUpdate: (update) => {
+            usedSubAgents.set(update.id, update);
             setSubAgents((prev) =>
               prev.some((agent) => agent.id === update.id)
                 ? prev.map((agent) => (agent.id === update.id ? update : agent))
@@ -160,12 +191,11 @@ export function App() {
             );
           },
           onComplete: (response) => {
-            if (response) {
-              setMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: response },
-              ]);
-            }
+            setMessages((prev) => [
+              ...prev,
+              ...subAgentNote(usedSubAgents),
+              ...(response ? [{ role: "assistant" as const, content: response }] : []),
+            ]);
             setStreamingText("");
             setActiveToolCalls([]);
             setSubAgents([]);
@@ -186,6 +216,7 @@ export function App() {
           error instanceof Error ? error.message : "Unknown error";
         setMessages((prev) => [
           ...prev,
+          ...subAgentNote(usedSubAgents),
           { role: "assistant", content: `Error: ${errorMessage}` },
         ]);
       } finally {
@@ -194,6 +225,12 @@ export function App() {
     },
     [conversationHistory, exit, model],
   );
+
+  const runningSubAgents = subAgents.filter((agent) => agent.status === "running").length;
+  const activityLabel =
+    runningSubAgents > 0
+      ? `Waiting for ${runningSubAgents} sub-agent${runningSubAgents === 1 ? "" : "s"}`
+      : activity;
 
   return (
     <Box flexDirection="column" width={columns} height={rows} paddingX={1}>
@@ -255,9 +292,11 @@ export function App() {
             </Box>
           )}
 
-          {isLoading && !streamingText && activeToolCalls.length === 0 && !pendingApproval && (
+          {/* always shown while the agent works, so a pause (the model reasoning, a long
+              tool input, a rate-limit retry) still shows it is busy and for how long */}
+          {isLoading && !pendingApproval && (
             <Box marginTop={1}>
-              <Spinner />
+              <Spinner key={activityLabel} label={`${activityLabel}...`} />
             </Box>
           )}
         </Box>

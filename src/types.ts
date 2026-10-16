@@ -2,6 +2,7 @@
 export interface AgentCallbacks{
 
   onToken: (token: string) => void;
+  onToolInputStart?: (name: string) => void;
   onToolCallStart: (name: string, args: unknown, toolCallId: string) => void;
   onToolCallEnd: (name: string, result: string, toolCallId: string) => void;
   onComplete: (response: string) => void;

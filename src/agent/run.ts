@@ -87,6 +87,7 @@ export async function runAgent(
     tools: { ...tools, spawnAgent },
     hooks: {
       onToken: callbacks.onToken,
+      onToolInputStart: callbacks.onToolInputStart,
       onToolCallStart: (call) => callbacks.onToolCallStart(call.toolName, call.args, call.toolCallId),
       onToolCallEnd: (call, result) => callbacks.onToolCallEnd(call.toolName, result, call.toolCallId),
       // ask only where it is needed (see approval.ts)

@@ -6,6 +6,8 @@ import type { ToolCallInfo } from "../types.ts";
 
 export interface LoopHooks {
   onToken: (token: string) => void;
+  // the model has started writing a tool call's input (a long writeFile can take a while)
+  onToolInputStart?: (toolName: string) => void;
   onToolCallStart: (call: ToolCallInfo) => void;
   onToolCallEnd: (call: ToolCallInfo, result: string) => void;
   // false = do not run it; the loop records a rejection and stops
@@ -64,6 +66,9 @@ export async function runLoop({
       if (chunk.type === "text-delta") {
         currentText += chunk.text;
         hooks.onToken(chunk.text);
+      }
+      if (chunk.type === "tool-input-start") {
+        hooks.onToolInputStart?.(chunk.toolName);
       }
       if (chunk.type === "tool-call") {
         const call: ToolCallInfo = {
