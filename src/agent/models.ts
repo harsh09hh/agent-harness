@@ -20,6 +20,10 @@ export const MODELS: ModelOption[] = [
 
 export const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
+// sub-agents use a smaller model with its own Groq rate limits, so they do not
+// use up the main model's per-minute token budget
+export const SUBAGENT_MODEL = "openai/gpt-oss-20b";
+
 // the .env variable each provider reads its key from
 export const PROVIDER_KEYS: Record<Provider, string> = {
   groq: "GROQ_API_KEY",

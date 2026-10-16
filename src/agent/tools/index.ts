@@ -1,4 +1,4 @@
-import { readFile, listFiles,writeFile, deleteFile } from "./file.ts";
+import { readFile, listFiles,writeFile, editFile, deleteFile } from "./file.ts";
 import { webSearch } from "./webSearch.ts";
 import { executeCode } from "./codeExecution.ts";
 import { runCommand } from "./shell.ts";
@@ -8,6 +8,7 @@ export const tools = {
   readFile,
   listFiles,
   writeFile,
+  editFile,
   deleteFile,
   webSearch,
   executeCode
@@ -15,7 +16,7 @@ export const tools = {
 };
 
 // Export individual tools for selective use in evals
-export { readFile, writeFile, listFiles, deleteFile } from "./file.ts";
+export { readFile, writeFile, editFile, listFiles, deleteFile } from "./file.ts";
 export { runCommand } from "./shell.ts";
 export { executeCode } from "./codeExecution.ts";
 export { webSearch } from "./webSearch.ts";
@@ -25,6 +26,7 @@ export const fileTools = {
   readFile,
   listFiles,
   writeFile,
+  editFile,
   deleteFile,
   webSearch,
   executeCode

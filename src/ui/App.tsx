@@ -20,7 +20,8 @@ import { FolderPicker } from "./components/FolderPicker.tsx";
 import { ModelPicker } from "./components/ModelPicker.tsx";
 import { StatusBar } from "./components/StatusBar.tsx";
 import { Markdown } from "./components/Markdown.tsx";
-import type { ToolApprovalRequest, TokenUsageInfo } from "../types.ts";
+import { SubAgentView } from "./components/SubAgentView.tsx";
+import type { ToolApprovalRequest, TokenUsageInfo, SubAgentUpdate } from "../types.ts";
 
 interface ActiveToolCall extends ToolCallProps {
   id: string;
@@ -36,6 +37,8 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([]);
+  // sub-agents started with spawnAgent during the current message
+  const [subAgents, setSubAgents] = useState<SubAgentUpdate[]>([]);
   const [pendingApproval, setPendingApproval] =
     useState<ToolApprovalRequest | null>(null);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageInfo | null>(null);
@@ -122,6 +125,7 @@ export function App() {
       setIsLoading(true);
       setStreamingText("");
       setActiveToolCalls([]);
+      setSubAgents([]);
       setScrollUp(0);
 
       try {
@@ -129,24 +133,30 @@ export function App() {
           onToken: (token) => {
             setStreamingText((prev) => prev + token);
           },
-          onToolCallStart: (name, args) => {
+          onToolCallStart: (name, args, toolCallId) => {
             setActiveToolCalls((prev) => [
               ...prev,
               {
-                id: `${name}-${Date.now()}`,
+                id: toolCallId,
                 name,
                 args,
                 status: "pending",
               },
             ]);
           },
-          onToolCallEnd: (name, result) => {
+          // matched by id: two calls to the same tool in one step are separate rows
+          onToolCallEnd: (_name, result, toolCallId) => {
             setActiveToolCalls((prev) =>
               prev.map((tc) =>
-                tc.name === name && tc.status === "pending"
-                  ? { ...tc, status: "complete", result }
-                  : tc,
+                tc.id === toolCallId ? { ...tc, status: "complete", result } : tc,
               ),
+            );
+          },
+          onSubAgentUpdate: (update) => {
+            setSubAgents((prev) =>
+              prev.some((agent) => agent.id === update.id)
+                ? prev.map((agent) => (agent.id === update.id ? update : agent))
+                : [...prev, update],
             );
           },
           onComplete: (response) => {
@@ -158,6 +168,7 @@ export function App() {
             }
             setStreamingText("");
             setActiveToolCalls([]);
+            setSubAgents([]);
           },
           onToolApproval: (name, args) => {
             return new Promise<boolean>((resolve) => {
@@ -226,14 +237,20 @@ export function App() {
 
           {activeToolCalls.length > 0 && !pendingApproval && (
             <Box flexDirection="column" marginTop={1}>
-              {activeToolCalls.map((tc) => (
-                <ToolCall
-                  key={tc.id}
-                  name={tc.name}
-                  args={tc.args}
-                  status={tc.status}
-                  result={tc.result}
-                />
+              {activeToolCalls
+                // spawnAgent calls are shown as sub-agent rows below
+                .filter((tc) => tc.name !== "spawnAgent")
+                .map((tc) => (
+                  <ToolCall
+                    key={tc.id}
+                    name={tc.name}
+                    args={tc.args}
+                    status={tc.status}
+                    result={tc.result}
+                  />
+                ))}
+              {subAgents.map((agent) => (
+                <SubAgentView key={agent.id} agent={agent} />
               ))}
             </Box>
           )}
